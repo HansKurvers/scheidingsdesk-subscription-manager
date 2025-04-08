@@ -2,11 +2,11 @@ import { app } from "@azure/functions";
 import type { HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
 import { ClientSecretCredential } from "@azure/identity";
 import { DynamicsWebApi } from "dynamics-web-api";
-import axios from "axios";
+import createMollieClient, { SequenceType } from '@mollie/api-client';
+
 
 // Mollie API configuration
-const MOLLIE_API_KEY = process.env.MOLLIE_API_KEY;
-const MOLLIE_API_URL = "https://api.mollie.com/v2";
+const MOLLIE_API_KEY = process.env.MOLLIE_API_KEY as string;
 
 const WEBHOOK_URL = process.env.WEBHOOK_URL;
 
@@ -24,30 +24,16 @@ async function initializeSubscription(request: HttpRequest, context: InvocationC
                 body: JSON.stringify({ error: "Email address is required" })
             };
         }
-        
-        // Configure Mollie API client
-        const mollieClient = axios.create({
-            baseURL: MOLLIE_API_URL,
-            headers: {
-                'Authorization': `Bearer ${MOLLIE_API_KEY}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        
+        const mollieClient = createMollieClient({ apiKey: MOLLIE_API_KEY });
+
         // Step 1: Create a customer in Mollie
-        context.log(`Creating customer for email: ${email}`);
-        const customerResponse = await mollieClient.post('/customers', {
-            email: email,
-            name: name || email.split('@')[0]  // Use part of email as name if not provided
-        });
-        
-        const customerId = customerResponse.data.id;
-        context.log(`Customer created with ID: ${customerId}`);
+        const customer = await mollieClient.customers.create({name: name, email: email, testmode: true})
+        context.log(`Customer created with ID: ${customer.id}`);
         
         // Write customer data to Dataverse
         try {
-            await writeCustomerToDataverse(customerId, email, context);
-            context.log(`Successfully wrote customer data to Dataverse: ${customerId}`);
+            await writeCustomerToDataverse(customer.id, customer.email, context);
+            context.log(`Successfully wrote customer data to Dataverse: ${customer.id}`);
         } catch (dataverseError) {
             context.error("Error writing to Dataverse:", dataverseError);
             // Continue with payment creation even if Dataverse write fails
@@ -55,24 +41,16 @@ async function initializeSubscription(request: HttpRequest, context: InvocationC
         
         // Step 2: Create a first payment for the customer
         context.log("Creating initial payment");
-        const paymentResponse = await mollieClient.post('/payments', {
-            amount: {
-                currency: "EUR",
-                value: amount || "0.01" 
-            },
-            webhookUrl: WEBHOOK_URL,
-            customerId: customerId,
-            sequenceType: "first"  // Indicates this is the first payment in a recurring sequence
-        });
+        const paymentResponse = await mollieClient.payments.create({customerId: customer.id, amount: amount, sequenceType: SequenceType.first, description: 'Eerste betaling'})
         
         // Return success response with payment details
         return {
             status: 200,
             jsonBody: {
                 success: true,
-                customerId: customerId,
-                paymentId: paymentResponse.data.id,
-                checkoutUrl: paymentResponse.data._links.checkout.href
+                customerId: customer.id,
+                paymentId: paymentResponse.id,
+                checkoutUrl: paymentResponse.getCheckoutUrl()
             }
         };
     } catch (error: any) {
