@@ -27,7 +27,7 @@ async function initializeSubscription(request: HttpRequest, context: InvocationC
         const mollieClient = createMollieClient({ apiKey: MOLLIE_API_KEY });
 
         // Step 1: Create a customer in Mollie
-        const customer = await mollieClient.customers.create({name: name, email: email, testmode: true})
+        const customer = await mollieClient.customers.create({name: name, email: email})
         context.log(`Customer created with ID: ${customer.id}`);
         
         // Write customer data to Dataverse
