@@ -10,46 +10,69 @@ const recurringPaymentWebhook = process.env.RECURRING_PAYMENT_WEBHOOK as string;
 
 
 async function initializeRecurringPayment(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
-try {
-        context.log("Creating recurring payment")
-        // Parse the request body
-        const requestBody: any = await request.json();
-        const {id} = requestBody;
+    try {
+        context.log("Creating recurring payment");
         
-        if (!id) {
+        // Parse form data instead of JSON
+        const formData = await request.formData();
+        // Or use text() and parse manually if formData() isn't available
+        const bodyText = await request.text();
+        context.log("Webhook payload:", bodyText);
+        
+        // Extract the payment ID (form data comes as id=tr_xxx)
+        const paymentId = new URLSearchParams(bodyText).get('id');
+        
+        if (!paymentId) {
+            context.log("No payment ID found in webhook");
             return {
                 status: 400,
-                body: JSON.stringify({ error: "Payment was not successful" })
+                body: JSON.stringify({ error: "Missing payment ID" })
             };
         }
+        
+        context.log(`Received webhook for payment: ${paymentId}`);
+        
+        // Get payment details from Mollie API
         const mollieClient = createMollieClient({ apiKey: MOLLIE_API_KEY });
-
-        const paymentStatus = await mollieClient.payments.get(id)
-
+        const payment = await mollieClient.payments.get(paymentId);
+        
+        // Check if payment was successful
+        if (payment.status !== "paid") {
+            context.log(`Payment not successful, status: ${payment.status}`);
+            return {
+                status: 200, // Still return 200 to acknowledge receipt
+                jsonBody: { received: true }
+            };
+        }
+        
+        const customerId = payment.customerId;
+        
+        // Set up subscription (your existing code)
         const startDate = new Date();
         startDate.setDate(startDate.getDate() + 30);
         const startDateShort = startDate.toISOString().split('T')[0] as string;
         
         const recurringPaymentResponse = await mollieClient.customerSubscriptions.create({
-          customerId: paymentStatus.customerId as string,
-          amount: {
-            currency: 'EUR',
-            value: recurringPaymentAmount
-          },
-          times: 12,
-          interval: '1 days',
-          startDate: startDateShort,
-          description: '',
-          webhookUrl: recurringPaymentWebhook
+            customerId: customerId as string,
+            amount: {
+                currency: 'EUR',
+                value: recurringPaymentAmount
+            },
+            times: 12,
+            interval: '1 days',
+            startDate: startDateShort,
+            description: '',
+            webhookUrl: recurringPaymentWebhook
         });
         
         let status = false;
-        if (recurringPaymentResponse.status === "active"){
-            status = true
+        if (recurringPaymentResponse.status === "active") {
+            status = true;
         }
-        await updateDataverseSubscription(paymentStatus.customerId as string, status, context)
-
-        // Return success response with payment details
+        
+        await updateDataverseSubscription(customerId as string, status, context);
+        
+        // Return success
         return {
             status: 200,
             jsonBody: {
