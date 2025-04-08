@@ -59,7 +59,7 @@ async function initializeRecurringPayment(request: HttpRequest, context: Invocat
             times: 12,
             interval: '1 days',
             startDate: startDateShort,
-            description: '',
+            description: 'Recurring payment',
             webhookUrl: recurringPaymentWebhook
         });
         
