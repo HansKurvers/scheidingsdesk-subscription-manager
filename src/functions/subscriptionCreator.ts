@@ -55,7 +55,7 @@ async function initializeSubscription(request: HttpRequest, context: InvocationC
           times: 12,
           interval: '1 days',
           startDate: startDateShort,
-          description: '',
+          description: 'Recurring payment',
           webhookUrl: recurringPaymentWebhook
         });
         
