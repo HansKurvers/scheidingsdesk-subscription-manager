@@ -14,8 +14,6 @@ async function initializeRecurringPayment(request: HttpRequest, context: Invocat
         context.log("Creating recurring payment");
         
         // Parse form data instead of JSON
-        const formData = await request.formData();
-        // Or use text() and parse manually if formData() isn't available
         const bodyText = await request.text();
         context.log("Webhook payload:", bodyText);
         
