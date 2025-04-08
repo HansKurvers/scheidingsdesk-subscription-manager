@@ -7,6 +7,7 @@ import createMollieClient, { SequenceType } from '@mollie/api-client';
 
 // Mollie API configuration
 const MOLLIE_API_KEY = process.env.MOLLIE_API_KEY as string;
+const paymentWebhook = process.env.PAYMENT_WEBHOOK as string;
 const mollieRedirect = process.env.MOLLIE_REDIRECT_URL as string;
  
 const WEBHOOK_URL = process.env.WEBHOOK_URL;
@@ -37,7 +38,7 @@ async function initializeSubscription(request: HttpRequest, context: InvocationC
         const paymentResponse = await mollieClient.payments.create({customerId: customer.id, amount: {
             currency: "EUR",
             value: amount || "0.01"
-        }, sequenceType: SequenceType.first, description: 'Eerste betaling', redirectUrl: mollieRedirect})
+        }, sequenceType: SequenceType.first, description: 'Eerste betaling', redirectUrl: mollieRedirect, webhookUrl: paymentWebhook })
         
          // Write customer data to Dataverse
          try {
