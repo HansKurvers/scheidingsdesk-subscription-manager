@@ -9,7 +9,7 @@ import createMollieClient, { SequenceType } from '@mollie/api-client';
 const MOLLIE_API_KEY = process.env.MOLLIE_API_KEY as string;
 const mollieRedirect = process.env.MOLLIE_REDIRECT_URL as string;
 
-
+ 
 const WEBHOOK_URL = process.env.WEBHOOK_URL;
 
 async function initializeSubscription(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
