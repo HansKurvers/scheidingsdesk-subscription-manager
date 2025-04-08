@@ -41,7 +41,10 @@ async function initializeSubscription(request: HttpRequest, context: InvocationC
         
         // Step 2: Create a first payment for the customer
         context.log("Creating initial payment");
-        const paymentResponse = await mollieClient.payments.create({customerId: customer.id, amount: amount, sequenceType: SequenceType.first, description: 'Eerste betaling'})
+        const paymentResponse = await mollieClient.payments.create({customerId: customer.id, amount: {
+            currency: "EUR",
+            value: amount || "0.01"
+        }, sequenceType: SequenceType.first, description: 'Eerste betaling'})
         
         // Return success response with payment details
         return {
