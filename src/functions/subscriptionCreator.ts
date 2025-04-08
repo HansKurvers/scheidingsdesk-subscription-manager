@@ -8,7 +8,6 @@ import createMollieClient, { SequenceType } from '@mollie/api-client';
 // Mollie API configuration
 const MOLLIE_API_KEY = process.env.MOLLIE_API_KEY as string;
 const mollieRedirect = process.env.MOLLIE_REDIRECT_URL as string;
-
  
 const WEBHOOK_URL = process.env.WEBHOOK_URL;
 
@@ -32,21 +31,22 @@ async function initializeSubscription(request: HttpRequest, context: InvocationC
         const customer = await mollieClient.customers.create({name: name, email: email})
         context.log(`Customer created with ID: ${customer.id}`);
         
-        // Write customer data to Dataverse
-        try {
-            await writeCustomerToDataverse(customer.id, customer.email, context);
-            context.log(`Successfully wrote customer data to Dataverse: ${customer.id}`);
-        } catch (dataverseError) {
-            context.error("Error writing to Dataverse:", dataverseError);
-            // Continue with payment creation even if Dataverse write fails
-        }
-        
+       
         // Step 2: Create a first payment for the customer
         context.log("Creating initial payment");
         const paymentResponse = await mollieClient.payments.create({customerId: customer.id, amount: {
             currency: "EUR",
             value: amount || "0.01"
         }, sequenceType: SequenceType.first, description: 'Eerste betaling', redirectUrl: mollieRedirect})
+        
+         // Write customer data to Dataverse
+         try {
+            await writeCustomerToDataverse(customer.id, customer.email, context);
+            context.log(`Successfully wrote customer data to Dataverse: ${customer.id}`);
+        } catch (dataverseError) {
+            context.error("Error writing to Dataverse:", dataverseError);
+            // Continue with payment creation even if Dataverse write fails
+        }
         
         // Return success response with payment details
         return {
