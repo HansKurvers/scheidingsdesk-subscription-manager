@@ -5,11 +5,11 @@ import { DynamicsWebApi } from "dynamics-web-api";
 import createMollieClient, { SequenceType } from '@mollie/api-client';
 
 
-// Mollie API configuration
+// Mollie API configuration 
 const MOLLIE_API_KEY = process.env.MOLLIE_API_KEY as string;
 const paymentWebhook = process.env.PAYMENT_WEBHOOK as string;
 const mollieRedirect = process.env.MOLLIE_REDIRECT_URL as string;
- 
+  
 const WEBHOOK_URL = process.env.WEBHOOK_URL;
 
 async function initializeSubscription(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
