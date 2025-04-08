@@ -14,21 +14,24 @@ try {
         context.log("Creating recurring payment")
         // Parse the request body
         const requestBody: any = await request.json();
-        const {customerId, success } = requestBody;
+        const {id} = requestBody;
         
-        if (!success) {
+        if (!id) {
             return {
                 status: 400,
                 body: JSON.stringify({ error: "Payment was not successful" })
             };
         }
         const mollieClient = createMollieClient({ apiKey: MOLLIE_API_KEY });
+
+        const paymentStatus = await mollieClient.payments.get(id)
+
         const startDate = new Date();
         startDate.setDate(startDate.getDate() + 30);
         const startDateShort = startDate.toISOString().split('T')[0] as string;
         
         const recurringPaymentResponse = await mollieClient.customerSubscriptions.create({
-          customerId: customerId,
+          customerId: paymentStatus.customerId as string,
           amount: {
             currency: 'EUR',
             value: recurringPaymentAmount
@@ -44,7 +47,7 @@ try {
         if (recurringPaymentResponse.status === "active"){
             status = true
         }
-        await updateDataverseSubscription(customerId, status, context)
+        await updateDataverseSubscription(paymentStatus.customerId as string, status, context)
 
         // Return success response with payment details
         return {
