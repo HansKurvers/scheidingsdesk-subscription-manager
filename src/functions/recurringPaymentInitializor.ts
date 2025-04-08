@@ -11,6 +11,7 @@ const recurringPaymentWebhook = process.env.RECURRING_PAYMENT_WEBHOOK as string;
 
 async function initializeRecurringPayment(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
 try {
+        context.log("Creating recurring payment")
         // Parse the request body
         const requestBody: any = await request.json();
         const {customerId, success } = requestBody;
@@ -44,7 +45,7 @@ try {
             status = true
         }
         await updateDataverseSubscription(customerId, status, context)
-        
+
         // Return success response with payment details
         return {
             status: 200,
@@ -72,7 +73,7 @@ try {
 // Register the function with Azure Functions
 app.http('recurringPaymentInitializor', {
     methods: ['POST'],
-    route: 'subscription/recurring',
+    route: 'subscription/recurring/payments/webhook',
     authLevel: 'anonymous',
     handler: initializeRecurringPayment
 });

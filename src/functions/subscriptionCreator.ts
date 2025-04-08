@@ -7,6 +7,8 @@ import createMollieClient, { SequenceType } from '@mollie/api-client';
 
 // Mollie API configuration 
 const MOLLIE_API_KEY = process.env.MOLLIE_API_KEY as string;
+const recurringPaymentWebhook = process.env.RECURRING_PAYMENT_WEBHOOK as string;
+const recurringPaymentAmount = process.env.RECURRING_PAYMENT_AMOUNT as string;
 const paymentWebhook = process.env.PAYMENT_WEBHOOK as string;
 const mollieRedirect = process.env.MOLLIE_REDIRECT_URL as string;
   
@@ -39,6 +41,23 @@ async function initializeSubscription(request: HttpRequest, context: InvocationC
             currency: "EUR",
             value: amount || "0.01"
         }, sequenceType: SequenceType.first, description: 'Eerste betaling', redirectUrl: mollieRedirect, webhookUrl: paymentWebhook })
+        
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() + 30);
+        const startDateShort = startDate.toISOString().split('T')[0] as string;
+        
+        const recurringPaymentResponse = await mollieClient.customerSubscriptions.create({
+          customerId: customer.id,
+          amount: {
+            currency: 'EUR',
+            value: recurringPaymentAmount
+          },
+          times: 12,
+          interval: '1 days',
+          startDate: startDateShort,
+          description: '',
+          webhookUrl: recurringPaymentWebhook
+        });
         
          // Write customer data to Dataverse
          try {
