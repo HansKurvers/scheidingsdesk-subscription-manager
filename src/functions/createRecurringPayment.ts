@@ -3,13 +3,13 @@ import type { HttpRequest, HttpResponseInit, InvocationContext } from "@azure/fu
 import {updateDataverseSubscription} from '../services/dataverseService'
 import createMollieClient, { SequenceType } from '@mollie/api-client';
 
-// Mollie API configuration
+// Mollie API configuration 
 const MOLLIE_API_KEY = process.env.MOLLIE_API_KEY as string;
 const recurringPaymentAmount = process.env.RECURRING_PAYMENT_AMOUNT as string;
 const recurringPaymentWebhook = process.env.RECURRING_PAYMENT_WEBHOOK as string;
 
 
-async function initializeRecurringPayment(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
+async function createRecurringPayment(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
     try {
         context.log("Creating recurring payment");
         
@@ -45,6 +45,7 @@ async function initializeRecurringPayment(request: HttpRequest, context: Invocat
         
         const customerId = payment.customerId;
         
+        await checkExistingSubscription(customerId as string, mollieClient, context);
         // Set up subscription (your existing code)
         const startDate = new Date();
         startDate.setDate(startDate.getDate() + 30);
@@ -59,7 +60,7 @@ async function initializeRecurringPayment(request: HttpRequest, context: Invocat
             times: 12,
             interval: '1 days',
             startDate: startDateShort,
-            description: 'Recurring payment',
+            description: `Recurring payment for customer ${customerId}`,
             webhookUrl: recurringPaymentWebhook
         });
         
@@ -94,10 +95,45 @@ async function initializeRecurringPayment(request: HttpRequest, context: Invocat
     }
 }
 
+async function checkExistingSubscription(customerId: string, mollieClient: any, context: InvocationContext) {
+    // Add this right before creating the subscription
+// Check if subscription already exists
+try {
+    const existingSubscriptions = await mollieClient.customerSubscriptions.list({ customerId: customerId as string });
+    
+    if(!existingSubscriptions) {
+        context.log(`No existing subscriptions found for customer ${customerId}`);
+        return;
+    }
+    // Check if a subscription with the same description exists
+    const existingSubscription = existingSubscriptions.find((sub: any) => 
+        sub.description === `Recurring payment for customer ${customerId}`);
+    
+    if (existingSubscription) {
+        context.log(`Subscription already exists for customer ${customerId}`);
+        
+        // Update Dataverse with existing subscription status
+        const status = existingSubscription.status === "active";
+        await updateDataverseSubscription(customerId as string, status, context);
+        
+        return {
+            status: 200,
+            jsonBody: {
+                success: true,
+                message: "Subscription already exists"
+            }
+        };
+    }
+} catch (error) {
+    // Log error but continue with creation attempt if check fails
+    context.log("Error checking existing subscriptions:", error);
+}
+}
+
 // Register the function with Azure Functions
-app.http('recurringPaymentInitializor', {
+app.http('createRecurringPayment', {
     methods: ['POST'],
     route: 'subscription/recurring/payments/webhook',
     authLevel: 'anonymous',
-    handler: initializeRecurringPayment
+    handler: createRecurringPayment
 });

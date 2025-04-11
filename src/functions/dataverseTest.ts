@@ -1,18 +1,19 @@
 import { app } from "@azure/functions";
 import type { HttpRequest, InvocationContext } from "@azure/functions";
+import { updateDataverseSubscription } from "../services/dataverseService";
 
-export async function subscriptionValidatorTest(
+export async function dataverseTest(
     req: HttpRequest,
     context: InvocationContext
 ): Promise<any> {
-    context.log(req.body);
+    await updateDataverseSubscription("test", true, context);
     return {
         body: true 
     };
 }
 
-app.http('subscriptionvalidatortest', {
-    route: 'subscription/validatortest',
-    handler: subscriptionValidatorTest,
+app.http('dataverseTest', {
+    route: 'test',
+    handler: dataverseTest,
     authLevel: 'anonymous'
 });
