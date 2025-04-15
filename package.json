@@ -1,26 +1,26 @@
 {
-  "name": "scheidingsdesk-subscription-manager",
-  "version": "1.0.0",
-  "description": "Azure Function for handling Mollie webhooks",
-  "main": "dist/functions/*.js",
-  "scripts": {
-    "build": "rm -rf dist && tsc",
-    "watch": "tsc -w",
-    "prestart": "npm run build",
-    "start": "func start",
-    "test": "echo \"No tests yet...\""
-  },
-  "dependencies": {
-    "@azure/identity": "^4.8.0",
-    "@mollie/api-client": "^3.7.0",
-    "axios": "^1.6.2",
-    "dataverse-webapi": "^3.0.2",
-    "dynamics-web-api": "^2.2.1"
-  },
-  "devDependencies": {
-    "@azure/functions": "^4.0.0",
-    "@biomejs/biome": "1.9.4",
-    "@types/node": "^18.x",
-    "typescript": "^4.9.5"
-  }
+	"name": "scheidingsdesk-subscription-manager",
+	"version": "1.0.0",
+	"description": "Azure Function for handling Mollie webhooks",
+	"main": "dist/functions/*.js",
+	"scripts": {
+		"build": "rm -rf dist && tsc",
+		"watch": "tsc -w",
+		"prestart": "npm run build",
+		"start": "func start",
+		"test": "echo \"No tests yet...\""
+	},
+	"dependencies": {
+		"@azure/identity": "^4.8.0",
+		"@mollie/api-client": "^3.7.0",
+		"axios": "^1.6.2",
+		"dataverse-webapi": "^3.0.2",
+		"dynamics-web-api": "^2.2.1"
+	},
+	"devDependencies": {
+		"@azure/functions": "^4.0.0",
+		"@biomejs/biome": "1.9.4",
+		"@types/node": "^18.x",
+		"typescript": "^4.9.5"
+	}
 }

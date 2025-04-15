@@ -1,146 +1,126 @@
-# Client Subscription Validator (Azure Function)
+# Subscription Manager (Azure Function)
 
-Deze Azure Function is ontwikkeld om clientgegevens uit Microsoft Dataverse te halen op basis van een clientID. Het valideert of een specifieke client bestaat in het systeem en haalt bijbehorende abonnementsgegevens op.
+This Azure Function manages subscriptions, integrating Mollie for payments and Microsoft Dataverse/Dynamics 365 for data storage.
 
-## Functionaliteit
+## Functionality
 
-De functie:
-1. Ontvangt een clientID via een HTTP POST request
-2. Maakt verbinding met Dataverse (Microsoft's data platform)
-3. Zoekt naar de client in de opgegeven entiteit (standaard: contacts)
-4. Retourneert de gevonden clientgegevens of een foutmelding
+The function provides the following functionalities:
 
-## Vereisten
+*   **Initialize Subscription**: Initializes a new subscription by creating a Mollie customer and redirecting the user to Mollie for payment.
+*   **Create Subscription**: Creates a recurring Mollie subscription after the initial payment.
+*   **Validate Subscription**: Validates a client's subscription status against Dataverse.
+*   **Sync Dataverse Subscription Status**: Synchronizes subscription statuses between Mollie and Dataverse.
+*   **Trigger Subscription Sync**: Manually triggers the subscription synchronization process.
 
-- Een Azure account met toegang tot Azure Functions
-- Een Microsoft Dataverse / Dynamics 365 omgeving
-- De juiste toegangsgegevens (tenant ID, application ID, client secret)
+## Functions
 
-## Installatie
+### 1. Initialize Subscription (`initializeSubscription`)
 
-1. Maak een nieuwe Azure Function in het Azure portal of via de Azure CLI
-2. Upload of kopieer de code naar je Azure Function project
-3. Configureer de benodigde omgevingsvariabelen (zie hieronder)
-4. Deploy de functie naar Azure
+*   **Trigger**: HTTP request
+*   **Description**: Initializes a new subscription by creating a Mollie customer and redirecting the user to Mollie for payment.
+*   **Environment Variables**:
+    *   `MOLLIE_API_KEY`: Mollie API key.
+    *   `PAYMENT_WEBHOOK`: Webhook URL for Mollie payment updates.
+    *   `MOLLIE_REDIRECT_URL`: URL to redirect the user after payment.
+    *   `WEBHOOK_URL`: Generic webhook URL.
 
-## Omgevingsvariabelen instellen
+### 2. Create Subscription (`createSubscription`)
 
-De volgende omgevingsvariabelen moeten worden ingesteld in de Azure Function configuratie:
+*   **Trigger**: HTTP request
+*   **Description**: Creates a recurring Mollie subscription after the initial payment.
+*   **Environment Variables**:
+    *   `MOLLIE_API_KEY`: Mollie API key.
+    *   `RECURRING_PAYMENT_AMOUNT`: Amount for recurring payments.
+    *   `RECURRING_PAYMENT_WEBHOOK`: Webhook URL for recurring payment updates.
 
-| Variabele | Beschrijving | Voorbeeld |
-|-----------|-------------|-----------|
-| TENANT_ID | De Microsoft 365 tenant ID | `12345678-1234-1234-1234-123456789012` |
-| APPLICATION_ID | De ID van de geregistreerde Azure AD applicatie | `87654321-4321-4321-4321-210987654321` |
-| CLIENT_SECRET | Het client secret van de Azure AD applicatie | `your-client-secret-here` |
-| DATAVERSE_URL | De URL van je Dataverse/Dynamics 365 omgeving | `https://jouworganisatie.crm.dynamics.com` |
-| ENTITY_NAME | (Optioneel) De naam van de entiteit/tabel in Dataverse | `contacts` (standaard) |
-| CLIENT_ID_FIELD | (Optioneel) Het veld dat de client ID bevat | `contactid` (standaard) |
-| SUBSCRIPTION_FIELD | (Optioneel) Het veld dat de abonnementsgegevens bevat | `subscriptionid` (standaard) |
+### 3. Validate Subscription (`validateSubscription`)
 
-Je kunt deze configureren in het Azure Portal:
-1. Ga naar je Function App
-2. Klik op "Configuration" in het linkermenu
-3. Voeg elke variabele toe via "New application setting"
+*   **Trigger**: HTTP request
+*   **Description**: Validates a client's subscription status against Dataverse.
+*   **Environment Variables**:
+    *   `TENANT_ID`: Microsoft 365 tenant ID.
+    *   `APPLICATION_ID`: Azure AD application ID.
+    *   `CLIENT_SECRET`: Azure AD application client secret.
+    *   `DATAVERSE_URL`: Dataverse/Dynamics 365 environment URL.
+    *   `ENTITY_NAME` (optional): Name of the entity/table in Dataverse (default: `contacts`).
+    *   `CLIENT_ID_FIELD` (optional): Field containing the client ID (default: `contactid`).
+    *   `SUBSCRIPTION_FIELD` (optional): Field containing the subscription data (default: `subscriptionid`).
 
-## Gebruik
+### 4. Sync Dataverse Subscription Status (`syncDataverseSubscriptionStatus`)
 
-De functie kan worden aangeroepen via een HTTP POST request naar het endpoint:
+*   **Trigger**: HTTP request
+*   **Description**: Synchronizes subscription statuses between Mollie and Dataverse.
+*   **Environment Variables**:
+    *   `MOLLIE_API_KEY`: Mollie API key.
+    *   `ENTITY_NAME_SINGULAR`: Singular name of the entity in Dataverse (default: `account`).
+    *   `CLIENT_ID_FIELD`: Field that stores the Mollie customer ID (default: `mollie_customer_id`).
+    *   `SUBSCRIPTION_FIELD`: Field containing the subscription data (default: `subscription`).
+    *   `SUBSCRIPTION_ID_FIELD`: Field containing the subscription ID (default: `subscriptionId`).
 
-```
-POST https://jouw-function-app.azurewebsites.net/api/subscription/validator
-```
+### 5. Trigger Subscription Sync (`triggerSubscriptionSync`)
 
-Met de volgende JSON in de body:
+*   **Trigger**: Timer
+*   **Description**: Manually triggers the subscription synchronization process.
+*   **Environment Variables**:
+    *   `RECURRING_PAYMENT_WEBHOOK`: Webhook URL for recurring payment updates.
 
-```json
-{
-  "clientId": "client-id-hier"
-}
-```
+## Requirements
 
-### Succesvolle respons (status 200)
+*   An Azure account with access to Azure Functions.
+*   A Microsoft Dataverse / Dynamics 365 environment.
+*   A Mollie account.
+*   The correct access credentials for Azure, Dataverse, and Mollie.
 
-```json
-{
-  "contactid": "client-id-hier",
-  "subscription_field": "abonnementsgegevens",
-  ...andere velden...
-}
-```
+## Installation
 
-### Foutresponses
+1.  Create a new Azure Function in the Azure portal or via the Azure CLI.
+2.  Upload or copy the code to your Azure Function project.
+3.  Configure the necessary environment variables (see below).
+4.  Deploy the function to Azure.
 
-- **400 Bad Request**: Wanneer geen clientId is opgegeven
-```json
-{
-  "error": "Please provide a clientId in the request body"
-}
-```
+## Setting Environment Variables
 
-- **404 Not Found**: Wanneer de client niet gevonden is
-```json
-{
-  "error": "Client with ID client-id-hier not found"
-}
-```
+The following environment variables must be set in the Azure Function configuration:
 
-- **500 Internal Server Error**: Bij onverwachte fouten
-```json
-{
-  "error": "An error occurred while retrieving client data",
-  "details": "Foutmelding details"
-}
-```
+| Variable                  | Description                                         | Example                                       |
+| ------------------------- | --------------------------------------------------- | --------------------------------------------- |
+| `MOLLIE_API_KEY`          | Mollie API key                                      | `test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`         |
+| `PAYMENT_WEBHOOK`         | Webhook URL for Mollie payment updates              | `https://your-function-app.azurewebsites.net/api/payment-webhook` |
+| `MOLLIE_REDIRECT_URL`     | URL to redirect the user after payment             | `https://your-website.com/subscription-success` |
+| `WEBHOOK_URL`             | Generic webhook URL                                 | `https://your-function-app.azurewebsites.net/api/webhook` |
+| `RECURRING_PAYMENT_AMOUNT`| Amount for recurring payments                       | `10.00`                                         |
+| `RECURRING_PAYMENT_WEBHOOK`| Webhook URL for recurring payment updates           | `https://your-function-app.azurewebsites.net/api/recurring-payment-webhook` |
+| `TENANT_ID`               | Microsoft 365 tenant ID                             | `12345678-1234-1234-1234-123456789012`        |
+| `APPLICATION_ID`          | Azure AD application ID                             | `87654321-4321-4321-4321-210987654321`        |
+| `CLIENT_SECRET`           | Azure AD application client secret                  | `your-client-secret-here`                     |
+| `DATAVERSE_URL`           | Dataverse/Dynamics 365 environment URL             | `https://your-organization.crm.dynamics.com`   |
+| `ENTITY_NAME`             | Name of the entity/table in Dataverse (optional)    | `contacts` (default)                            |
+| `CLIENT_ID_FIELD`         | Field containing the client ID (optional)           | `contactid` (default)                           |
+| `SUBSCRIPTION_FIELD`      | Field containing the subscription data (optional)   | `subscriptionid` (default)                      |
+| `ENTITY_NAME_SINGULAR`    | Singular name of the entity in Dataverse (default) | `account`                                       |
+| `SUBSCRIPTION_ID_FIELD`   | Field containing the subscription ID (default)    | `subscriptionId`                                |
 
-## Ontwikkelaarsnotities
+You can configure these in the Azure Portal:
 
-### Code Overzicht
+1.  Go to your Function App
+2.  Click on "Configuration" in the left menu
+3.  Add each variable via "New application setting"
 
-De functie bestaat uit twee belangrijke onderdelen:
-1. `validateSubscription` - De hoofdfunctie die HTTP requests afhandelt
-2. `getClientDataFromDataverse` - Voert de feitelijke query uit naar Dataverse
+## Usage
 
-### Verbinding met Dataverse
+The functions can be invoked via HTTP requests to their respective endpoints. Refer to the function code for specific request formats and expected responses.
 
-De verbinding met Dataverse wordt gemaakt via:
-1. Azure Identity `ClientSecretCredential` voor authenticatie
-2. De `dynamics-web-api` bibliotheek voor het uitvoeren van queries
+## Security Considerations
 
-### Lokaal testen
+*   The functions currently use `authLevel: 'anonymous'`, which means no authentication is required to call the functions.
+*   In a production environment, consider changing this to `function` or `admin`.
+*   Never store sensitive data like client secrets in the code - always use environment variables or Azure KeyVault.
 
-Om de functie lokaal te testen:
-1. Installeer Azure Functions Core Tools
-2. Maak een `local.settings.json` bestand met de vereiste omgevingsvariabelen
-3. Voer `func start` uit in je terminal
+## Troubleshooting
 
-Voorbeeld van `local.settings.json`:
-```json
-{
-  "IsEncrypted": false,
-  "Values": {
-    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
-    "FUNCTIONS_WORKER_RUNTIME": "node",
-    "TENANT_ID": "jouw-tenant-id",
-    "APPLICATION_ID": "jouw-app-id",
-    "CLIENT_SECRET": "jouw-client-secret",
-    "DATAVERSE_URL": "https://jouworganisatie.crm.dynamics.com",
-    "ENTITY_NAME": "contacts",
-    "CLIENT_ID_FIELD": "contactid",
-    "SUBSCRIPTION_FIELD": "subscriptionid"
-  }
-}
-```
+If you encounter issues:
 
-## Veiligheidsoverwegingen
-
-- De functie gebruikt momenteel `authLevel: 'anonymous'`, wat betekent dat er geen authenticatie nodig is om de functie aan te roepen
-- In een productieomgeving zou je kunnen overwegen om dit te veranderen naar `function` of `admin`
-- Bewaar nooit gevoelige gegevens zoals client secrets in de code - gebruik altijd omgevingsvariabelen of Azure KeyVault
-
-## Problemen oplossen
-
-Als je problemen ondervindt:
-1. Controleer of alle omgevingsvariabelen correct zijn ingesteld
-2. Kijk in de Azure Function logs voor foutmeldingen
-3. Controleer of de service principal voldoende rechten heeft op Dataverse
-4. Zorg ervoor dat het DATAVERSE_URL format correct is
+1.  Verify that all environment variables are set correctly.
+2.  Check the Azure Function logs for error messages.
+3.  Ensure that the service principal has sufficient permissions on Dataverse.
+4.  Ensure that the `DATAVERSE_URL` format is correct.
