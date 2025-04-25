@@ -18,8 +18,6 @@ const clientIdField = process.env.CLIENT_ID_FIELD || "mollie_customer_id"; // Fi
 const subscriptionField = process.env.SUBSCRIPTION_FIELD || "subscription";
 const subscriptionIdField =
 	process.env.SUBSCRIPTION_ID_FIELD || "subscriptionId";
-const subscriptionManualField =
-	process.env.SUBSCRIPTION_MANUAL_FIELD || "subscription_manual";
 
 async function syncDataverseSubscriptionStatus(
 	request: HttpRequest,
@@ -52,14 +50,6 @@ async function syncDataverseSubscriptionStatus(
 			const recordGuid = record[actualPrimaryKeyFieldName];
 			const mollieSubscriptionId = record[subscriptionIdField];
 			const customerSubscriptionId = record[clientIdField];
-			const isManual = record[subscriptionManualField];
-
-			if (isManual) {
-				context.info(
-					`Skipping record due to manually active subscription. GUID: ${recordGuid}, Customer ID: ${customerSubscriptionId}`,
-				);
-				continue;
-			}
 
 			context.info(
 				`Processing record GUID: ${recordGuid}, Mollie Subscription ID: ${mollieSubscriptionId}, Customer ID: ${customerSubscriptionId}`,

@@ -80,6 +80,8 @@ async function getClientDataFromDataverse(
 	const entityName = process.env.ENTITY_NAME || "contacts"; // The table/entity name in Dataverse
 	const clientIdField = process.env.CLIENT_ID_FIELD || "contactid"; // Field that contains the client ID
 	const subscriptionField = process.env.SUBSCRIPTION_FIELD || "contactid"; // Field that contains the client ID
+	const subscriptionManualField =
+		process.env.SUBSCRIPTION_MANUAL_FIELD || "subscription_manual";
 
 	if (!tenantId || !appId || !clientSecret || !dataverseUrl) {
 		throw new Error(
@@ -134,7 +136,7 @@ async function getClientDataFromDataverse(
 		const result = await dynamicsWebApi.retrieveMultiple({
 			collection: entityName,
 			filter: `${clientIdField} eq '${clientId}'`,
-			select: [clientIdField, subscriptionField], // Select all fields - modify as needed for specific fields
+			select: [clientIdField, subscriptionField, subscriptionManualField], // Select all fields - modify as needed for specific fields
 		});
 
 		// Return the first record if found
