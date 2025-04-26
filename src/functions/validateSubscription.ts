@@ -22,6 +22,9 @@ async function validateSubscription(
 	context: InvocationContext,
 ): Promise<HttpResponseInit> {
 	context.log("HTTP trigger function processed a request.");
+	const subscriptionField = process.env.SUBSCRIPTION_FIELD || "subscription";
+	const subscriptionManualField =
+		process.env.SUBSCRIPTION_MANUAL_FIELD || "subscription_manual";
 
 	// Parse request body to get client ID
 	const requestBody = (await request.json()) as RequestBody;
@@ -41,7 +44,11 @@ async function validateSubscription(
 		if (!clientData) {
 			return {
 				status: 404,
-				jsonBody: { error: `Client with ID ${clientId} not found` },
+				jsonBody: {
+					error: `Client with ID ${clientId} not found`,
+					[subscriptionField]: false,
+					[subscriptionManualField]: false,
+				},
 			};
 		}
 
@@ -79,7 +86,7 @@ async function getClientDataFromDataverse(
 	let dataverseUrl = process.env.DATAVERSE_URL; // e.g., https://yourorg.crm.dynamics.com
 	const entityName = process.env.ENTITY_NAME || "contacts"; // The table/entity name in Dataverse
 	const clientIdField = process.env.CLIENT_ID_FIELD || "contactid"; // Field that contains the client ID
-	const subscriptionField = process.env.SUBSCRIPTION_FIELD || "contactid"; // Field that contains the client ID
+	const subscriptionField = process.env.SUBSCRIPTION_FIELD || "subscription";
 	const subscriptionManualField =
 		process.env.SUBSCRIPTION_MANUAL_FIELD || "subscription_manual";
 
