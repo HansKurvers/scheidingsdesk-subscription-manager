@@ -43,7 +43,7 @@ async function validateSubscription(
 
 		if (!clientData) {
 			return {
-				status: 404,
+				status: 200,
 				jsonBody: {
 					error: `Client with ID ${clientId} not found`,
 					[subscriptionField]: false,
