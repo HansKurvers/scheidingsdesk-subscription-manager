@@ -9,6 +9,7 @@ import { DynamicsWebApi } from "dynamics-web-api";
 
 interface RequestBody {
 	clientId: string;
+	email: string;
 }
 
 /**
@@ -29,8 +30,9 @@ async function validateSubscription(
 	// Parse request body to get client ID
 	const requestBody = (await request.json()) as RequestBody;
 	const clientId = requestBody?.clientId;
+	const email = requestBody?.email;
 
-	if (!clientId) {
+	if (!email) {
 		return {
 			status: 400,
 			jsonBody: { error: "Please provide a clientId in the request body" },
@@ -39,13 +41,13 @@ async function validateSubscription(
 
 	try {
 		// Get Dataverse data
-		const clientData = await getClientDataFromDataverse(clientId, context);
+		const clientData = await getClientDataFromDataverse(email, context);
 
 		if (!clientData) {
 			return {
 				status: 200,
 				jsonBody: {
-					error: `Client with ID ${clientId} not found`,
+					error: `Client with email ${email} not found`,
 					[subscriptionField]: false,
 					[subscriptionManualField]: false,
 				},
@@ -76,7 +78,7 @@ async function validateSubscription(
  * @returns Client data object or null if not found
  */
 async function getClientDataFromDataverse(
-	clientId: string,
+	email: string,
 	context: InvocationContext,
 ): Promise<any> {
 	// Environment variables - store these in your Azure Function Configuration
@@ -85,6 +87,7 @@ async function getClientDataFromDataverse(
 	const clientSecret = process.env.CLIENT_SECRET;
 	let dataverseUrl = process.env.DATAVERSE_URL; // e.g., https://yourorg.crm.dynamics.com
 	const entityName = process.env.ENTITY_NAME || "contacts"; // The table/entity name in Dataverse
+	const emailField = process.env.EMAIL_FIELD || "email";
 	const clientIdField = process.env.CLIENT_ID_FIELD || "contactid"; // Field that contains the client ID
 	const subscriptionField = process.env.SUBSCRIPTION_FIELD || "subscription";
 	const subscriptionManualField =
@@ -142,8 +145,13 @@ async function getClientDataFromDataverse(
 		// Query for the client record
 		const result = await dynamicsWebApi.retrieveMultiple({
 			collection: entityName,
-			filter: `${clientIdField} eq '${clientId}'`,
-			select: [clientIdField, subscriptionField, subscriptionManualField], // Select all fields - modify as needed for specific fields
+			filter: `${emailField} eq '${email}'`,
+			select: [
+				clientIdField,
+				emailField,
+				subscriptionField,
+				subscriptionManualField,
+			], // Select all fields - modify as needed for specific fields
 		});
 
 		// Return the first record if found
