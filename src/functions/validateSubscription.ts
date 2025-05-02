@@ -35,7 +35,9 @@ async function validateSubscription(
 	if (!email) {
 		return {
 			status: 400,
-			jsonBody: { error: "Please provide a clientId in the request body" },
+			jsonBody: {
+				error: "Please provide a valid email address in the request body",
+			},
 		};
 	}
 
